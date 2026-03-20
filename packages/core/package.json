@@ -1,0 +1,22 @@
+{
+    "name": "@wegame-adapter-kit/core",
+    "version": "0.1.0",
+    "description": "Core WeChat mini-game adapter SDK.",
+    "main": "dist/index.cjs",
+    "module": "dist/index.js",
+    "types": "dist/index.d.ts",
+    "files": [
+        "dist"
+    ],
+    "sideEffects": false,
+    "exports": {
+        ".": {
+            "types": "./dist/index.d.ts",
+            "require": "./dist/index.cjs",
+            "import": "./dist/index.js"
+        }
+    },
+    "scripts": {
+        "build": "tsup"
+    }
+}

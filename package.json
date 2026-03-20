@@ -1,0 +1,35 @@
+{
+    "name": "wegame-adapter-kit",
+    "version": "0.1.0",
+    "private": true,
+    "description": "TypeScript monorepo for a unified WeChat mini-game adapter SDK.",
+    "packageManager": "npm@10.8.2",
+    "workspaces": [
+        "packages/core",
+        "examples/*"
+    ],
+    "scripts": {
+        "build": "npm run build --workspaces --if-present",
+        "clean": "rimraf packages/*/dist examples/*/dist",
+        "lint": "eslint . --ext .ts",
+        "test": "vitest run",
+        "typecheck": "tsc -p tsconfig.json --noEmit",
+        "format": "prettier --check .",
+        "format:write": "prettier --write .",
+        "changeset": "changeset",
+        "release": "changeset publish"
+    },
+    "devDependencies": {
+        "@changesets/cli": "^2.29.4",
+        "@types/node": "^24.0.0",
+        "@typescript-eslint/eslint-plugin": "^7.18.0",
+        "@typescript-eslint/parser": "^7.18.0",
+        "eslint": "^8.57.0",
+        "eslint-config-prettier": "^9.1.0",
+        "prettier": "^3.3.3",
+        "rimraf": "^6.0.1",
+        "tsup": "^8.2.4",
+        "typescript": "^5.8.3",
+        "vitest": "^2.1.9"
+    }
+}

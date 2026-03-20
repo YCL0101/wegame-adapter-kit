@@ -1,0 +1,12 @@
+- [x] Verify that the copilot-instructions.md file in the .github directory is created.
+- [x] Clarify Project Requirements: 可发布的 TypeScript npm SDK，面向微信小游戏能力适配，以 core 为统一接入层。
+- [x] Scaffold the Project: 已创建以 core 为中心的 npm workspace、基础目录、构建配置、测试配置与发布配置。
+- [x] Customize the Project: 已补充环境检测、能力守卫、广告管理器、跳转小程序封装，并移除独立引擎桥接包。
+- [x] Install Required Extensions: No extensions needed.
+- [x] Compile the Project: 已执行 npm install、npm run typecheck、npm run test、npm run build、npm run lint。
+- [x] Create and Run Task: 已提供 .vscode/tasks.json，包含 build 与 test 任务。
+- [ ] Launch the Project: 如需调试启动，等待用户确认具体目标。
+- [x] Ensure Documentation is Complete: 已补充 README.md、docs/README.md，并清理本文件模板注释。
+- Work through each checklist item systematically.
+- Keep communication concise and focused.
+- Follow development best practices.
