@@ -100,8 +100,10 @@ export class CustomAdManager {
     string,
     { adUnitId: string; style: CustomAdStyle }
   > {
+    const options = this.getOptions()
+    const customAds = options?.platform !== 'douyin' ? options?.customAds : undefined
     return Object.fromEntries(
-      Object.entries(this.getOptions()?.customAds ?? {}).map(
+      Object.entries(customAds ?? {}).map(
         ([placementKey, config]) => [
           placementKey,
           {
