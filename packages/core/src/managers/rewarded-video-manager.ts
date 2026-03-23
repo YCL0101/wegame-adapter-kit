@@ -23,6 +23,7 @@ type RewardedVideoErrorListener = (error: WxError) => void
 
 export class RewardedVideoManager {
   private readonly adMap = new Map<string, RewardedVideoAd>()
+  private readonly busyPlacementKeys = new Set<string>()
   private readonly lastErrorMap = new Map<string, WxError>()
   private readonly loadListenersMap = new Map<
     string,
@@ -74,15 +75,18 @@ export class RewardedVideoManager {
         listener(error)
       }
     })
+  }
 
-    ad.onClose((result) => {
-      for (const listener of this.getOrCreateListeners(
-        this.closeListenersMap,
-        placementKey
-      )) {
-        listener(result)
-      }
-    })
+  private emitClose(
+    placementKey: string,
+    result?: RewardedVideoCloseResult
+  ): void {
+    for (const listener of this.getOrCreateListeners(
+      this.closeListenersMap,
+      placementKey
+    )) {
+      listener(result)
+    }
   }
 
   private getRewardedVideoAds(): Record<string, RewardedVideoPlacementOptions> {
@@ -190,12 +194,34 @@ export class RewardedVideoManager {
   async show(placementKey: string): Promise<RewardedVideoShowResult> {
     const resolvedPlacementKey = placementKey
     const ad = this.ensureAd(resolvedPlacementKey)
+
+    if (this.busyPlacementKeys.has(resolvedPlacementKey)) {
+      throw createAdapterError(
+        ADAPTER_ERROR_CODES.adShowFailed,
+        'Rewarded video ad is already showing.',
+        { placementKey: resolvedPlacementKey }
+      )
+    }
+
+    this.busyPlacementKeys.add(resolvedPlacementKey)
+
     let cleanup = () => undefined
+    let settled = false
+
+    const finalize = () => {
+      cleanup()
+
+      if (!settled) {
+        settled = true
+        this.busyPlacementKeys.delete(resolvedPlacementKey)
+      }
+    }
 
     // show 成功并不代表用户完成观看，真正结果以 onClose 回调为准。
     const closePromise = new Promise<RewardedVideoShowResult>((resolve) => {
       const handleClose = (result?: RewardedVideoCloseResult) => {
-        cleanup()
+        finalize()
+        this.emitClose(resolvedPlacementKey, result)
 
         if (result) {
           const completed = result.isEnded !== false
@@ -235,7 +261,7 @@ export class RewardedVideoManager {
         await ad.show()
         return await closePromise
       } catch (error) {
-        cleanup()
+        finalize()
         throw normalizeError(
           ADAPTER_ERROR_CODES.adShowFailed,
           'Failed to show rewarded video ad.',
@@ -251,6 +277,7 @@ export class RewardedVideoManager {
     }
 
     this.adMap.clear()
+    this.busyPlacementKeys.clear()
     this.lastErrorMap.clear()
     this.loadListenersMap.clear()
     this.closeListenersMap.clear()

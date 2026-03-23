@@ -69,6 +69,10 @@ class RewardedVideoAdMock implements RewardedVideoAd {
       handler(result)
     }
   }
+
+  getCloseHandlerCount(): number {
+    return this.closeHandlers.size
+  }
 }
 
 class InterstitialAdMock implements InterstitialAd {
@@ -282,6 +286,59 @@ describe('WegameAdapterKit events', () => {
     expect(onLoad).not.toHaveBeenCalled()
     expect(onClose).not.toHaveBeenCalled()
     expect(onError).not.toHaveBeenCalled()
+  })
+
+  it('binds native rewarded video onClose only once per show lifecycle', async () => {
+    const sdk = createAdSdk({
+      rewardedVideoAds: {
+        levelReward: 'rewarded-unit'
+      }
+    })
+
+    rewardedAd.show = vi.fn(async () => {
+      expect(rewardedAd.getCloseHandlerCount()).toBe(1)
+      rewardedAd.emitClose({ isEnded: true })
+    })
+
+    const result = await sdk.showRewardedVideo('levelReward')
+
+    expect(result.shouldReward).toBe(true)
+    expect(rewardedAd.getCloseHandlerCount()).toBe(0)
+  })
+
+  it('rejects duplicated rewarded video show while the same placement is busy', async () => {
+    const sdk = createAdSdk({
+      rewardedVideoAds: {
+        levelReward: 'rewarded-unit'
+      }
+    })
+
+    let resolveClose = () => undefined
+
+    rewardedAd.show = vi.fn(
+      () =>
+        new Promise<void>((resolve) => {
+          resolveClose = () => {
+            rewardedAd.emitClose({ isEnded: true })
+            resolve()
+          }
+        })
+    )
+
+    const firstShow = sdk.showRewardedVideo('levelReward')
+    const secondShow = sdk.showRewardedVideo('levelReward')
+
+    await expect(secondShow).rejects.toMatchObject({
+      code: 'AD_SHOW_FAILED',
+      message: 'Rewarded video ad is already showing.'
+    })
+
+    resolveClose()
+
+    await expect(firstShow).resolves.toMatchObject({
+      shouldReward: true,
+      placementKey: 'levelReward'
+    })
   })
 
   it('supports interstitial load close and error events', async () => {
