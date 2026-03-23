@@ -1,6 +1,6 @@
 {
     "name": "wegame-adapter-kit",
-    "version": "0.1.0",
+    "version": "0.1.1",
     "private": true,
     "description": "TypeScript monorepo for a unified WeChat mini-game adapter SDK.",
     "packageManager": "npm@10.8.2",
