@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { douyinSidebar } from './douyin-sidebar'
 import { createAdSdk } from './sdk'
 import type {
   CustomAd,
@@ -10,6 +11,12 @@ import type {
   WxError,
   WxMiniGame
 } from './wechat'
+import type {
+  TtCheckSceneOptions,
+  TtLaunchOptions,
+  TtMiniGame,
+  TtNavigateToSceneOptions
+} from './douyin'
 
 class RewardedVideoAdMock implements RewardedVideoAd {
   private readonly loadHandlers = new Set<
@@ -203,16 +210,56 @@ class CustomAdMock implements CustomAd {
   }
 }
 
+class TtMiniGameMock implements TtMiniGame {
+  private onShowHandler: ((options: TtLaunchOptions) => void) | undefined
+
+  createRewardedVideoAd = vi.fn(() => {
+    throw new Error('Not implemented in this test')
+  })
+
+  createInterstitialAd = vi.fn(() => {
+    throw new Error('Not implemented in this test')
+  })
+
+  createBannerAd = vi.fn(() => {
+    throw new Error('Not implemented in this test')
+  })
+
+  navigateToMiniProgram = vi.fn()
+  checkScene = vi.fn((options: TtCheckSceneOptions) => {
+    options.success?.({ isExist: true })
+  })
+  navigateToScene = vi.fn((options: TtNavigateToSceneOptions) => {
+    options.success?.({ errMsg: 'navigateToScene:ok' })
+  })
+
+  onShow(callback: (options: TtLaunchOptions) => void): void {
+    this.onShowHandler = callback
+  }
+
+  offShow(callback: (options: TtLaunchOptions) => void): void {
+    if (this.onShowHandler === callback) {
+      this.onShowHandler = undefined
+    }
+  }
+
+  emitShow(options: TtLaunchOptions): void {
+    this.onShowHandler?.(options)
+  }
+}
+
 describe('WegameAdapterKit events', () => {
   let rewardedAd: RewardedVideoAdMock
   let interstitialAd: InterstitialAdMock
   let customAd: CustomAdMock
   let wxMock: WxMiniGame
+  let ttMock: TtMiniGameMock
 
   beforeEach(() => {
     rewardedAd = new RewardedVideoAdMock()
     interstitialAd = new InterstitialAdMock()
     customAd = new CustomAdMock()
+    ttMock = new TtMiniGameMock()
 
     wxMock = {
       createRewardedVideoAd: vi.fn(() => rewardedAd),
@@ -221,10 +268,13 @@ describe('WegameAdapterKit events', () => {
       navigateToMiniProgram: vi.fn()
     }
     ;(globalThis as typeof globalThis & { wx?: WxMiniGame }).wx = wxMock
+    delete (globalThis as typeof globalThis & { tt?: TtMiniGame }).tt
+    douyinSidebar.stopListening()
   })
 
   it('supports rewarded video onLoad and onClose subscriptions before ad creation', async () => {
     const sdk = createAdSdk({
+      platform: 'wechat',
       rewardedVideoAds: {
         levelReward: 'rewarded-unit'
       }
@@ -246,6 +296,7 @@ describe('WegameAdapterKit events', () => {
 
   it('passes native rewarded video create options when configured', async () => {
     const sdk = createAdSdk({
+      platform: 'wechat',
       rewardedVideoAds: {
         levelReward: {
           adUnitId: 'rewarded-unit',
@@ -264,6 +315,7 @@ describe('WegameAdapterKit events', () => {
 
   it('supports rewarded video off methods', async () => {
     const sdk = createAdSdk({
+      platform: 'wechat',
       rewardedVideoAds: {
         levelReward: 'rewarded-unit'
       }
@@ -290,6 +342,7 @@ describe('WegameAdapterKit events', () => {
 
   it('binds native rewarded video onClose only once per show lifecycle', async () => {
     const sdk = createAdSdk({
+      platform: 'wechat',
       rewardedVideoAds: {
         levelReward: 'rewarded-unit'
       }
@@ -308,6 +361,7 @@ describe('WegameAdapterKit events', () => {
 
   it('rejects duplicated rewarded video show while the same placement is busy', async () => {
     const sdk = createAdSdk({
+      platform: 'wechat',
       rewardedVideoAds: {
         levelReward: 'rewarded-unit'
       }
@@ -343,6 +397,7 @@ describe('WegameAdapterKit events', () => {
 
   it('supports interstitial load close and error events', async () => {
     const sdk = createAdSdk({
+      platform: 'wechat',
       interstitialAds: {
         levelStart: 'interstitial-unit'
       }
@@ -369,6 +424,7 @@ describe('WegameAdapterKit events', () => {
 
   it('supports custom ad load close hide and error events', async () => {
     const sdk = createAdSdk({
+      platform: 'wechat',
       customAds: {
         homeFloat: {
           adUnitId: 'custom-unit',
@@ -402,5 +458,26 @@ describe('WegameAdapterKit events', () => {
       errCode: 3001,
       errMsg: 'custom error'
     })
+  })
+
+  it('tracks latest Douyin launch state from onShow and identifies sidebar launch', async () => {
+    ;(globalThis as typeof globalThis & { tt?: TtMiniGame }).tt = ttMock
+
+    const sdk = createAdSdk({
+      platform: 'douyin',
+      autoListenSidebarLaunch: false
+    })
+
+    sdk.startDouyinSidebarListening()
+    ttMock.emitShow({ launch_from: 'side_bar' })
+
+    expect(sdk.isLaunchedFromDouyinSidebar()).toBe(true)
+    expect(sdk.getDouyinSidebarLaunchState()).toEqual({
+      launchOptions: { launch_from: 'side_bar' },
+      launchedFromSidebar: true
+    })
+
+    expect(await sdk.checkDouyinSidebarAvailability()).toBe(true)
+    await expect(sdk.navigateToDouyinSidebar()).resolves.toBeUndefined()
   })
 })

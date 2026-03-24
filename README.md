@@ -2,6 +2,8 @@
 
 提供微信和抖音小游戏统一广告接入层、小游戏环境检测和跳转小程序封装。
 
+同时提供抖音侧边栏奖励场景所需的启动监听、可用性检测与侧边栏跳转封装。
+
 ## Package
 
 - @wegame-adapter-kit/core：微信、抖音小游戏能力封装、广告管理器与运行时检测
@@ -15,6 +17,7 @@
 | Banner 广告  | ✓          | ✓          |
 | 原生模板广告 | ✓          | ✗          |
 | 跳转小程序   | ✓          | ✓          |
+| 抖音侧边栏   | ✗          | ✓          |
 
 ## Quick Start
 
@@ -61,11 +64,19 @@ if (getMiniGamePlatform() !== 'unknown') {
 **抖音小游戏**
 
 ```ts
-import { adSdk, getMiniGamePlatform } from '@wegame-adapter-kit/core'
+import {
+  adSdk,
+  douyinSidebar,
+  getMiniGamePlatform
+} from '@wegame-adapter-kit/core'
 
 if (getMiniGamePlatform() === 'douyin') {
+  // 建议在 game.js 或尽可能早的启动时机同步监听，避免错过热启动 onShow。
+  douyinSidebar.startListening()
+
   adSdk.init({
     platform: 'douyin',
+    autoListenSidebarLaunch: false,
     rewardedVideoAds: {
       levelReward: process.env.LEVEL_REWARD_VIDEO_AD_UNIT_ID ?? ''
     },
@@ -87,6 +98,13 @@ if (getMiniGamePlatform() === 'douyin') {
 
   if (result.shouldReward) {
     console.log('grant reward')
+  }
+
+  const sidebarAvailable = await adSdk.checkDouyinSidebarAvailability()
+  const launchedFromSidebar = adSdk.isLaunchedFromDouyinSidebar()
+
+  if (sidebarAvailable && !launchedFromSidebar) {
+    await adSdk.navigateToDouyinSidebar()
   }
 }
 ```
@@ -147,6 +165,86 @@ type DouyinAdSdkInitOptions = {
 
 ## API Reference
 
+### 抖音侧边栏能力
+
+抖音侧边栏奖励接入建议分两步：
+
+1. 小游戏启动时同步监听 tt.onShow，并始终缓存最新启动参数。
+2. 展示奖励入口前先调用 tt.checkScene 判断侧边栏是否可用；用户点击入口时，再基于最新 onShow 数据判断是否已从侧边栏启动。
+
+#### startListening / startDouyinSidebarListening
+
+用于同步注册 tt.onShow 监听。推荐在 game.js 启动时调用，避免错过用户从侧边栏返回小游戏时的热启动回调。
+
+```ts
+import { douyinSidebar } from '@wegame-adapter-kit/core'
+
+douyinSidebar.startListening()
+```
+
+或者通过 SDK：
+
+```ts
+adSdk.startDouyinSidebarListening()
+```
+
+#### checkDouyinSidebarAvailability
+
+检测当前宿主是否支持侧边栏跳转。返回值对应 tt.checkScene 的 isExist。
+
+```ts
+const shouldShowRewardEntry = await adSdk.checkDouyinSidebarAvailability()
+```
+
+#### isLaunchedFromDouyinSidebar
+
+基于最新一次 tt.onShow 返回值判断当前是否为侧边栏启动。
+
+```ts
+const launchedFromSidebar = adSdk.isLaunchedFromDouyinSidebar()
+
+if (launchedFromSidebar) {
+  console.log('按钮显示：领取奖励')
+} else {
+  console.log('按钮显示：前往侧边栏')
+}
+```
+
+#### navigateToDouyinSidebar
+
+触发跳转到抖音侧边栏，适合在奖励弹窗的“前往侧边栏”按钮中调用。
+
+```ts
+await adSdk.navigateToDouyinSidebar()
+```
+
+#### 推荐接入流程
+
+```ts
+import { adSdk, douyinSidebar } from '@wegame-adapter-kit/core'
+
+// 游戏启动时同步监听侧边栏启动参数
+douyinSidebar.startListening()
+
+// 在适当时机（例如关卡结算）展示奖励入口前，先检测侧边栏能力
+const sidebarAvailable = await adSdk.checkDouyinSidebarAvailability()
+
+// 只有在侧边栏可用的情况下才展示奖励入口
+if (sidebarAvailable) {
+  showRewardEntry()
+}
+
+// 用户点击奖励入口时，再基于最新启动参数判断是直接展示奖励，还是引导前往侧边栏
+if (adSdk.isLaunchedFromDouyinSidebar()) {
+  showClaimRewardButton()
+} else {
+  showGotoSidebarButton(async () => {
+    closeRewardDialog()
+    await adSdk.navigateToDouyinSidebar()
+  })
+}
+```
+
 ### init
 
 初始化 SDK，注册广告位配置。`platform` 字段必填以确定平台类型。
@@ -179,6 +277,7 @@ const capabilities = adSdk.getCapabilities()
 | `rewardedVideo` | 环境支持激励视频 且 init 时至少配置了一个激励视频广告位     |
 | `interstitial`  | 环境支持插屏广告 且 init 时至少配置了一个插屏广告位         |
 | `customAd`      | 环境支持原生模板广告 且 init 时至少配置了一个原生模板广告位 |
+| `douyinSidebar` | 环境支持抖音 tt.checkScene，可用于侧边栏入口能力判断        |
 
 任一字段为 `false` 表示：当前不在微信小游戏环境 / 基础库不支持该广告类型，或 init 时未传对应广告位。
 

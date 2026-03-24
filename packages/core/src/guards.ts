@@ -1,7 +1,11 @@
 import { ADAPTER_ERROR_CODES, createAdapterError } from './errors'
 import type { AdSdkInitOptions } from './types'
 import type { NavigateToMiniProgramOptions, WxMiniGame } from './wechat'
-import type { TtMiniGame } from './douyin'
+import type { TtLaunchOptions, TtMiniGame } from './douyin'
+
+const DOUYIN_SIDEBAR_SCENE = 'side_bar'
+const DOUYIN_SIDEBAR_LAUNCH_FROM_VALUES = new Set(['side_bar', 'sidebar'])
+const DOUYIN_SIDEBAR_LOCATION_VALUES = new Set(['side_bar', 'sidebar'])
 
 type GlobalRuntime = typeof globalThis & {
   wx?: WxMiniGame
@@ -140,6 +144,66 @@ export function canNavigateToMiniProgram(
     runtime &&
     options?.appId &&
     typeof runtime.navigateToMiniProgram === 'function'
+  )
+}
+
+/**
+ * 判断当前抖音小游戏运行时是否支持监听 onShow 启动参数。
+ */
+export function canListenDouyinOnShow(): boolean {
+  const tt = getTt()
+
+  return Boolean(tt && typeof tt.onShow === 'function')
+}
+
+/**
+ * 判断当前抖音小游戏运行时是否支持检测侧边栏场景可用性。
+ */
+export function canCheckDouyinScene(
+  scene: string = DOUYIN_SIDEBAR_SCENE
+): boolean {
+  const tt = getTt()
+
+  return Boolean(tt && scene && typeof tt.checkScene === 'function')
+}
+
+/**
+ * 判断当前抖音小游戏运行时是否支持跳转到指定场景。
+ */
+export function canNavigateToDouyinScene(
+  scene: string = DOUYIN_SIDEBAR_SCENE
+): boolean {
+  const tt = getTt()
+
+  return Boolean(tt && scene && typeof tt.navigateToScene === 'function')
+}
+
+/**
+ * 返回默认的抖音侧边栏场景名。
+ */
+export function getDouyinSidebarScene(): string {
+  return DOUYIN_SIDEBAR_SCENE
+}
+
+/**
+ * 根据最新一次 tt.onShow 返回值判断是否从侧边栏启动。
+ *
+ * 平台会在 launch_from 或 location 字段中给出侧边栏来源标记，
+ * 这里统一兼容常见值，避免业务侧自行散落判断逻辑。
+ */
+export function isDouyinSidebarLaunch(
+  launchOptions?: TtLaunchOptions | null
+): boolean {
+  if (!launchOptions) {
+    return false
+  }
+
+  const launchFrom = String(launchOptions.launch_from ?? '').toLowerCase()
+  const location = String(launchOptions.location ?? '').toLowerCase()
+
+  return (
+    DOUYIN_SIDEBAR_LAUNCH_FROM_VALUES.has(launchFrom) ||
+    DOUYIN_SIDEBAR_LOCATION_VALUES.has(location)
   )
 }
 

@@ -4,6 +4,7 @@ import type {
   NavigateToMiniProgramOptions,
   RewardedVideoCloseResult
 } from './wechat'
+import type { TtLaunchOptions } from './douyin'
 
 /**
  * 单个激励视频广告位配置。
@@ -124,6 +125,13 @@ export interface DouyinAdSdkInitOptions {
 
   /** 预留调试开关。 */
   debug?: boolean
+
+  /**
+   * 是否在初始化时立即同步监听 tt.onShow。
+   *
+   * 侧边栏奖励场景建议保持默认开启，确保在小游戏启动时机尽早记录最新启动参数。
+   */
+  autoListenSidebarLaunch?: boolean
 }
 
 /**
@@ -195,9 +203,42 @@ export interface CapabilitySnapshot {
   bannerAd: boolean
   customAd: boolean
   miniProgramNavigation: boolean
+  douyinSidebar: boolean
 }
 
 /**
  * 跳转小程序参数。
  */
 export interface MiniProgramNavigationOptions extends NavigateToMiniProgramOptions {}
+
+/**
+ * 抖音侧边栏场景可用性检测参数。
+ */
+export interface DouyinSidebarAvailabilityOptions {
+  /**
+   * 目标场景名。
+   * 默认使用平台侧边栏场景 side_bar。
+   */
+  scene?: string
+}
+
+/**
+ * 抖音侧边栏跳转参数。
+ */
+export interface DouyinSidebarNavigationOptions {
+  /**
+   * 目标场景名。
+   * 默认使用平台侧边栏场景 side_bar。
+   */
+  scene?: string
+}
+
+/**
+ * 抖音侧边栏启动状态快照。
+ */
+export interface DouyinSidebarLaunchState {
+  /** 最新一次 onShow 回调原始数据。 */
+  launchOptions: TtLaunchOptions | null
+  /** 是否可判定为从侧边栏启动。 */
+  launchedFromSidebar: boolean
+}

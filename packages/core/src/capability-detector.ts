@@ -1,5 +1,6 @@
 import {
   canCreateBannerAd,
+  canCheckDouyinScene,
   canCreateCustomAd,
   canCreateInterstitialAd,
   canCreateRewardedVideoAd,
@@ -42,7 +43,8 @@ export const CapabilityDetector = {
       interstitial: canCreateInterstitialAd(interstitialAdUnitId),
       bannerAd: canCreateBannerAd(bannerAdUnitId),
       customAd: canCreateCustomAd(customAdUnitId),
-      miniProgramNavigation: canNavigateToMiniProgram({ appId: 'probe' })
+      miniProgramNavigation: canNavigateToMiniProgram({ appId: 'probe' }),
+      douyinSidebar: canCheckDouyinScene()
     }
   }
 }

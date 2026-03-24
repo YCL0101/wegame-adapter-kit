@@ -7,6 +7,7 @@ import {
   validateInitOptions
 } from './guards'
 import { MiniProgramNavigator } from './mini-program-navigator'
+import { DouyinSidebar } from './douyin-sidebar'
 import { BannerAdManager } from './managers/banner-manager'
 import { CustomAdManager } from './managers/custom-ad-manager'
 import { InterstitialManager } from './managers/interstitial-manager'
@@ -14,6 +15,9 @@ import { RewardedVideoManager } from './managers/rewarded-video-manager'
 import type {
   AdSdkInitOptions,
   CapabilitySnapshot,
+  DouyinSidebarAvailabilityOptions,
+  DouyinSidebarLaunchState,
+  DouyinSidebarNavigationOptions,
   MiniProgramNavigationOptions,
   RewardedVideoShowResult
 } from './types'
@@ -40,6 +44,7 @@ export class WegameAdapterKit {
   private readonly customAdManager = new CustomAdManager(() => this.options)
   private readonly bannerAdManager = new BannerAdManager(() => this.options)
   private readonly miniProgramNavigator = new MiniProgramNavigator()
+  private readonly douyinSidebar = new DouyinSidebar()
 
   /**
    * 初始化 SDK。
@@ -51,6 +56,14 @@ export class WegameAdapterKit {
     // 初始化阶段统一注入广告位和样式配置，避免业务代码散落常量。
     validateInitOptions(options)
     this.options = options
+
+    if (
+      options.platform === 'douyin' &&
+      options.autoListenSidebarLaunch !== false
+    ) {
+      this.douyinSidebar.startListening()
+    }
+
     return this
   }
 
@@ -432,9 +445,58 @@ export class WegameAdapterKit {
   }
 
   /**
+   * 同步监听抖音小游戏 onShow。
+   *
+   * 建议在 game.js 或尽可能早的启动时机调用，确保侧边栏奖励链路可获取最新启动参数。
+   */
+  startDouyinSidebarListening(): void {
+    this.douyinSidebar.startListening()
+  }
+
+  /**
+   * 取消抖音小游戏 onShow 监听。
+   */
+  stopDouyinSidebarListening(): void {
+    this.douyinSidebar.stopListening()
+  }
+
+  /**
+   * 获取最近一次抖音小游戏启动状态快照。
+   */
+  getDouyinSidebarLaunchState(): DouyinSidebarLaunchState {
+    return this.douyinSidebar.getLaunchState()
+  }
+
+  /**
+   * 判断当前用户是否由抖音侧边栏启动小游戏。
+   */
+  isLaunchedFromDouyinSidebar(): boolean {
+    return this.douyinSidebar.isLaunchedFromSidebar()
+  }
+
+  /**
+   * 检测当前宿主是否支持跳转抖音侧边栏。
+   */
+  checkDouyinSidebarAvailability(
+    options?: DouyinSidebarAvailabilityOptions
+  ): Promise<boolean> {
+    return this.douyinSidebar.checkAvailability(options)
+  }
+
+  /**
+   * 跳转到抖音侧边栏。
+   */
+  navigateToDouyinSidebar(
+    options?: DouyinSidebarNavigationOptions
+  ): Promise<void> {
+    return this.douyinSidebar.navigate(options)
+  }
+
+  /**
    * 销毁当前实例创建的所有广告对象。
    */
   destroy(): void {
+    this.douyinSidebar.stopListening()
     this.rewardedVideoManager.destroy()
     this.interstitialManager.destroy()
     this.customAdManager.destroy()

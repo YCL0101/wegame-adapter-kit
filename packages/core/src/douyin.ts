@@ -12,6 +12,40 @@ export interface TtError {
   [key: string]: unknown
 }
 
+/**
+ * 抖音小游戏 onShow 返回的启动参数。
+ *
+ * 侧边栏奖励场景需要依赖最新一次 onShow 返回值中的启动来源信息，
+ * 以判断当前是否属于“从侧边栏启动小游戏”的链路。
+ */
+export interface TtLaunchOptions {
+  /** 启动来源，平台在侧边栏相关拉起场景下会回传对应标记。 */
+  launch_from?: string
+  /** 启动位置，平台在不同宿主入口下会回传不同 location。 */
+  location?: string
+  scene?: string | number
+  query?: Record<string, string | undefined>
+  referrerInfo?: Record<string, unknown>
+  [key: string]: unknown
+}
+
+export interface TtCheckSceneSuccessResult {
+  isExist: boolean
+  [key: string]: unknown
+}
+
+export interface TtCheckSceneOptions {
+  scene: string
+  success?: (result: TtCheckSceneSuccessResult) => void
+  fail?: (error: TtError) => void
+}
+
+export interface TtNavigateToSceneOptions {
+  scene: string
+  success?: (result: { errMsg?: string }) => void
+  fail?: (error: TtError) => void
+}
+
 export interface TtRewardedVideoCloseResult {
   /** 视频是否被完整播放后关闭。 */
   isEnded?: boolean
@@ -96,4 +130,8 @@ export interface TtMiniGame {
     style?: TtBannerAdStyle
   }): TtBannerAd
   navigateToMiniProgram(options: TtNavigateToMiniProgramOptions): void
+  onShow?(callback: (options: TtLaunchOptions) => void): void
+  offShow?(callback: (options: TtLaunchOptions) => void): void
+  checkScene?(options: TtCheckSceneOptions): void
+  navigateToScene?(options: TtNavigateToSceneOptions): void
 }
