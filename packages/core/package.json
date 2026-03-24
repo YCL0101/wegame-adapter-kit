@@ -20,6 +20,6 @@
         }
     },
     "scripts": {
-        "build": "tsup"
+        "build": "tsup && node scripts/copy-readme.mjs"
     }
 }
