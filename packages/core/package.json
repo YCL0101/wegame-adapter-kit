@@ -1,6 +1,6 @@
 {
     "name": "@wegame-adapter-kit/core",
-    "version": "0.1.1",
+    "version": "0.1.2",
     "description": "Unified ad SDK for WeChat and Douyin mini-games.",
     "main": "dist/index.cjs",
     "module": "dist/index.js",
