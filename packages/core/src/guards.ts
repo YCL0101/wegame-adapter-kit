@@ -28,6 +28,22 @@ function getRuntime(): GlobalRuntime {
   return globalThis as GlobalRuntime
 }
 
+function hasWxRuntime(): boolean {
+  return Boolean(getRuntime().wx)
+}
+
+function hasTtRuntime(): boolean {
+  return Boolean(getRuntime().tt)
+}
+
+function detectMiniGamePlatform(): MiniGamePlatform {
+  // 在抖音开发工具和部分运行时适配层中，可能同时暴露 wx 兼容对象和真实 tt。
+  // 这里优先认定 tt，避免把抖音环境误识别成微信。
+  if (hasTtRuntime()) return 'douyin'
+  if (hasWxRuntime()) return 'wechat'
+  return 'unknown'
+}
+
 /**
  * 获取当前运行时中的微信小游戏 wx 对象。
  */
@@ -47,7 +63,17 @@ export function getTt(): TtMiniGame | null {
  * 管理器通过此方法屏蔽平台差异，统一调用广告 API。
  */
 export function getAdRuntime(): WxMiniGame | TtMiniGame | null {
-  return getRuntime().wx ?? getRuntime().tt ?? null
+  const runtime = getRuntime()
+
+  if (detectMiniGamePlatform() === 'douyin') {
+    return runtime.tt ?? null
+  }
+
+  if (detectMiniGamePlatform() === 'wechat') {
+    return runtime.wx ?? null
+  }
+
+  return null
 }
 
 // 微信小游戏运行时是所有能力可用的前置条件。
@@ -65,23 +91,21 @@ export type MiniGamePlatform = 'wechat' | 'douyin' | 'unknown'
  * 大多数业务场景用这一个函数即可替代多个 is* 判断。
  */
 export function getMiniGamePlatform(): MiniGamePlatform {
-  if (isWechatMiniGame()) return 'wechat'
-  if (isDouyinMiniGame()) return 'douyin'
-  return 'unknown'
+  return detectMiniGamePlatform()
 }
 
 /**
  * 判断当前是否运行在微信小游戏环境。
  */
 export function isWechatMiniGame(): boolean {
-  return Boolean(getWx())
+  return detectMiniGamePlatform() === 'wechat'
 }
 
 /**
  * 判断当前是否运行在抖音小游戏环境。
  */
 export function isDouyinMiniGame(): boolean {
-  return Boolean(getTt())
+  return detectMiniGamePlatform() === 'douyin'
 }
 
 /**

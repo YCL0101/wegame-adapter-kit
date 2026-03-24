@@ -1,6 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { douyinSidebar } from './douyin-sidebar'
+import {
+  getAdRuntime,
+  getMiniGamePlatform,
+  isDouyinMiniGame,
+  isWechatMiniGame
+} from './guards'
 import { createAdSdk } from './sdk'
 import type {
   CustomAd,
@@ -247,6 +253,29 @@ class TtMiniGameMock implements TtMiniGame {
     this.onShowHandler?.(options)
   }
 }
+
+describe('runtime detection', () => {
+  beforeEach(() => {
+    delete (globalThis as typeof globalThis & { wx?: WxMiniGame }).wx
+    delete (globalThis as typeof globalThis & { tt?: TtMiniGame }).tt
+  })
+
+  it('prefers Douyin when both tt and wx compatibility runtime exist', () => {
+    const wxMock = {
+      createRewardedVideoAd: vi.fn(),
+      navigateToMiniProgram: vi.fn()
+    } as unknown as WxMiniGame
+    const ttMock = new TtMiniGameMock()
+
+    ;(globalThis as typeof globalThis & { wx?: WxMiniGame }).wx = wxMock
+    ;(globalThis as typeof globalThis & { tt?: TtMiniGame }).tt = ttMock
+
+    expect(getMiniGamePlatform()).toBe('douyin')
+    expect(isDouyinMiniGame()).toBe(true)
+    expect(isWechatMiniGame()).toBe(false)
+    expect(getAdRuntime()).toBe(ttMock)
+  })
+})
 
 describe('WegameAdapterKit events', () => {
   let rewardedAd: RewardedVideoAdMock
