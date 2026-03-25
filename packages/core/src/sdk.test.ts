@@ -498,11 +498,12 @@ describe('WegameAdapterKit events', () => {
     })
 
     sdk.startDouyinSidebarListening()
-    ttMock.emitShow({ launch_from: 'side_bar' })
+    // 使用抖音文档实际回传值：location 为 'sidebar_card'，scene 为 '021036'
+    ttMock.emitShow({ scene: '021036', launch_from: 'homepage', location: 'sidebar_card' })
 
     expect(sdk.isLaunchedFromDouyinSidebar()).toBe(true)
     expect(sdk.getDouyinSidebarLaunchState()).toEqual({
-      launchOptions: { launch_from: 'side_bar' },
+      launchOptions: { scene: '021036', launch_from: 'homepage', location: 'sidebar_card' },
       launchedFromSidebar: true
     })
 

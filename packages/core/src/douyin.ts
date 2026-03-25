@@ -19,12 +19,21 @@ export interface TtError {
  * 以判断当前是否属于“从侧边栏启动小游戏”的链路。
  */
 export interface TtLaunchOptions {
-  /** 启动来源，平台在侧边栏相关拉起场景下会回传对应标记。 */
+  /**
+   * 启动来源。侧边栏场景下通常为 'homepage'，但该值过于宽泛，
+   * 不应单独作为侧边栏判断依据，应结合 location 字段判断。
+   */
   launch_from?: string
-  /** 启动位置，平台在不同宿主入口下会回传不同 location。 */
+  /**
+   * 启动位置。侧边栏场景下值为 'sidebar_card'（抖音文档标准值）。
+   * 这是判断"从侧边栏启动"的权威字段。
+   */
   location?: string
+  /** 场景码。侧边栏场景下值为 '021036'。 */
   scene?: string | number
   query?: Record<string, string | undefined>
+  /** 来源小程序信息。 */
+  refererInfo?: { appId?: string; extraData?: Record<string, unknown> }
   referrerInfo?: Record<string, unknown>
   [key: string]: unknown
 }

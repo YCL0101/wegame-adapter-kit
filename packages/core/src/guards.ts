@@ -3,9 +3,9 @@ import type { AdSdkInitOptions } from './types'
 import type { NavigateToMiniProgramOptions, WxMiniGame } from './wechat'
 import type { TtLaunchOptions, TtMiniGame } from './douyin'
 
-const DOUYIN_SIDEBAR_SCENE = 'side_bar'
-const DOUYIN_SIDEBAR_LAUNCH_FROM_VALUES = new Set(['side_bar', 'sidebar'])
-const DOUYIN_SIDEBAR_LOCATION_VALUES = new Set(['side_bar', 'sidebar'])
+const DOUYIN_SIDEBAR_SCENE = 'sidebar'
+// location 是侧边栏来源的唯一判断字段，sidebar_card 为抖音官方文档规定值。
+const DOUYIN_SIDEBAR_LOCATION_VALUES = new Set(['sidebar_card'])
 
 type GlobalRuntime = typeof globalThis & {
   wx?: WxMiniGame
@@ -222,13 +222,11 @@ export function isDouyinSidebarLaunch(
     return false
   }
 
-  const launchFrom = String(launchOptions.launch_from ?? '').toLowerCase()
+  // 抖音文档示例：location === 'sidebar_card' 是侧边栏启动的权威判断字段。
+  // launch_from 为 'homepage' 过于宽泛，不单独作为判断依据。
   const location = String(launchOptions.location ?? '').toLowerCase()
 
-  return (
-    DOUYIN_SIDEBAR_LAUNCH_FROM_VALUES.has(launchFrom) ||
-    DOUYIN_SIDEBAR_LOCATION_VALUES.has(location)
-  )
+  return DOUYIN_SIDEBAR_LOCATION_VALUES.has(location)
 }
 
 /**
